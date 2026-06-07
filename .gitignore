@@ -2,4 +2,5 @@
 .vscode/
 __pycache__/
 chroma_db/
-rag_astro.ipynb
+rag_astro.
+*.pdf
