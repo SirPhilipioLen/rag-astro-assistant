@@ -46,8 +46,11 @@ if %errorlevel% neq 0 (
     echo [WARNING] Ollama service is not running.
     set /p "start_ollama=Would you like to start the Ollama service automatically? (y/n): "
     if /i "!start_ollama!"=="y" (
-        echo [INFO] Starting Ollama service...
-        start "" "ollama app"
+        echo [INFO] Starting Ollama service in background...
+        
+        rem Εκκίνηση του daemon αόρατα με προκαθορισμένο το OLLAMA_HOST=0.0.0.0
+        powershell -Command "$env:OLLAMA_HOST='0.0.0.0'; Start-Process -FilePath 'ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden"
+        
         timeout /t 5 /nobreak >nul
     ) else (
         echo [ERROR] Ollama service must be running to query models.
@@ -57,9 +60,23 @@ if %errorlevel% neq 0 (
 exit /b 0
 
 :get_mdl
-echo [INFO] Ensuring required AI models are downloaded...
-ollama pull deepseek-r1:8b || exit /b 1
-ollama pull nomic-embed-text || exit /b 1
+echo [INFO] Ensuring required AI models are available...
+
+rem Έλεγχος για το deepseek-r1:8b
+ollama list | findstr /C:"deepseek-r1:8b" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [INFO] Model deepseek-r1:8b not found. Downloading...
+    ollama pull deepseek-r1:8b || exit /b 1
+)
+
+rem Έλεγχος για το nomic-embed-text
+ollama list | findstr /C:"nomic-embed-text" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [INFO] Model nomic-embed-text not found. Downloading...
+    ollama pull nomic-embed-text || exit /b 1
+)
+
+echo [SUCCESS] All required models are ready.
 exit /b 0
 
 :chk_doc
@@ -111,13 +128,13 @@ if !errorlevel! neq 0 (
 exit /b 0
 
 :run_terminal
-echo [INFO] Starting Terminal Interface INSIDE Docker...
+echo [INFO] Starting Terminal Interface inside Docker...
 docker compose run --build --rm rag-cli
 exit /b 0
 
 :run_webui
 echo [INFO] Launching Gradio and Cloudflare Tunnel inside Docker...
-docker compose up --build -d rag-web rag-tunnel 
+docker compose up -d rag-web rag-tunnel 
 
 echo [INFO] Waiting for Cloudflare to generate public link...
 timeout /t 10 /nobreak >nul
@@ -147,8 +164,8 @@ echo.
 echo ===================================================
 echo                 Choose Interface
 echo ===================================================
-echo [1] Stay in Terminal (Run chat.py INSIDE Docker)
-echo [2] Launch Web UI (Run Gradio INSIDE Docker)
+echo [1] Stay in Terminal
+echo [2] Launch Web UI
 echo.
 set /p "choice=Enter your choice (1 or 2): "
 

@@ -2,16 +2,15 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Εγκατάσταση απαραίτητων πακέτων συστήματος
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Environment variables (αποφυγή αρχείων .pyc και άμεσο output των logs)
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Αναβάθμιση pip
-RUN pip install --no-cache-dir --upgrade pip
-
-# Εγκατάσταση βιβλιοθηκών Python
-RUN pip install --no-cache-dir \
+# Εγκατάσταση ca-certificates, αναβάθμιση pip και βιβλιοθηκών σε ΕΝΑ layer με χρήση cache mount
+RUN apt-get update && apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --upgrade pip && \
+    pip install \
     gradio==6.15.0 \
     ollama \
     llama-index \
@@ -22,12 +21,10 @@ RUN pip install --no-cache-dir \
     llama-index-vector-stores-chroma \
     rich
 
-# Environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Αντιγραφή του κώδικα (Στο τέλος για σωστό Docker caching)
+# Αντιγραφή όλου του κώδικα στο τέλος για σωστό Docker caching
 COPY gradio_app.py .
 COPY chat.py .
+COPY ingest.py .
 
 EXPOSE 7860
 

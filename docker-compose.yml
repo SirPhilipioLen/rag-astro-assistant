@@ -7,9 +7,8 @@ services:
     volumes:
       - ./chroma_db:/app/chroma_db
       - ./papers:/app/papers
-      - ./ingest.py:/app/ingest.py
     environment:
-      - OLLAMA_HOST=${OLLAMA_HOST}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
     restart: unless-stopped
 
   rag-cli:
@@ -18,7 +17,7 @@ services:
     volumes:
       - ./chroma_db:/app/chroma_db
     environment:
-      - OLLAMA_HOST=${OLLAMA_HOST}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
     stdin_open: true
     tty: true
     command: python chat.py
