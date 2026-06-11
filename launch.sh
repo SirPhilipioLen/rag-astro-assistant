@@ -50,13 +50,13 @@ chk_svc() {
         fi
     fi
 
-    # 2. ΑΥΤΟΜΑΤΟΠΟΙΗΣΗ: Έλεγχος αν είναι προσβάσιμο από το Docker (IP 172.17.0.1)
-    if ! curl -s --connect-timeout 2 http://172.17.0.1:11434 >/dev/null 2>&1; then
-        echo "[WARNING] Ollama is running but restricted to localhost. Automating network exposure for Docker..."
+    # 2. ΑΥΤΟΜΑΤΟΠΟΙΗΣΗ: Έλεγχος αν λείπει η πρόσβαση Docker Ή η βελτιστοποίηση για την AMD GPU
+    if ! curl -s --connect-timeout 2 http://172.17.0.1:11434 >/dev/null 2>&1 || ! systemctl show ollama.service 2>/dev/null | grep -q "GPU_MAX_HW_QUEUES=1"; then
+        echo "[WARNING] Missing Docker access or AMD GPU idle optimization. Configuring systemd automatically..."
         
-        # Αυτόματη δημιουργία του systemd override χωρίς χειροκίνητο edit
+        # Δημιουργία του καταλόγου και εγγραφή των ρυθμίσεων σε μία καθαρή γραμμή
         sudo mkdir -p /etc/systemd/system/ollama.service.d
-        echo -e "[Service]\nEnvironment=\"OLLAMA_HOST=0.0.0.0\"" | sudo tee /etc/systemd/system/ollama.service.d/override.conf > /dev/null
+        echo -e "[Service]\nEnvironment=\"OLLAMA_HOST=0.0.0.0\"\nEnvironment=\"GPU_MAX_HW_QUEUES=1\"" | sudo tee /etc/systemd/system/ollama.service.d/override.conf > /dev/null
         
         echo "[INFO] Reloading systemd and restarting Ollama..."
         sudo systemctl daemon-reload
@@ -68,7 +68,7 @@ chk_svc() {
             echo "[ERROR] Automatic configuration failed. Docker still cannot reach Ollama."
             exit 1
         fi
-        echo "[SUCCESS] Ollama is now automatically configured and accessible by Docker."
+        echo "[SUCCESS] Ollama configured successfully (Docker Access + AMD GPU Fix enabled)."
     fi
 }
 
