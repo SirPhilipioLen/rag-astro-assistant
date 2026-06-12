@@ -6,7 +6,7 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.node_parser import SentenceSplitter
 
-# 1. Configuration
+# Config
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
 Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=OLLAMA_HOST)
 
@@ -15,36 +15,71 @@ COLLECTION_NAME = "astro_rag_corpus"
 PAPERS_DIR = "./papers"
 
 def run_ingestion():
+    # Ensure dir exists
+    os.makedirs(PAPERS_DIR, exist_ok=True)
+
     chroma_client = chromadb.PersistentClient(path=DB_PATH)
     chroma_collection = chroma_client.get_or_create_collection(COLLECTION_NAME)
 
-    # Έλεγχος αν υπάρχουν ήδη δεδομένα (Αποφυγή διπλού indexing)
+    # Track already indexed files
+    existing_files = set()
     if chroma_collection.count() > 0:
-        print("[INFO] Vector database already indexed. Skipping ingestion.")
+        results = chroma_collection.get(include=["metadatas"])
+        for metadata in results.get("metadatas", []):
+            if metadata and "file_name" in metadata:
+                existing_files.add(metadata["file_name"])
+
+    # Get available PDFs
+    all_files = [f for f in os.listdir(PAPERS_DIR) if f.endswith('.pdf')]
+    
+    if not all_files:
+        print(f"[INFO] Place PDF files in the '{PAPERS_DIR}' folder and rerun the script.")
         return
 
-    # Έλεγχος ύπαρξης φακέλου (Αποφυγή crash)
-    if not os.path.exists(PAPERS_DIR) or not any(f.endswith('.pdf') for f in os.listdir(PAPERS_DIR)):
-        print(f"[ERROR] No PDFs found in '{PAPERS_DIR}'. Place your papers there first.")
+    # Filter new files
+    new_files = [f for f in all_files if f not in existing_files]
+
+    if not new_files:
+        print("[INFO] All files are already synced. No new documents found.")
         return
 
-    print("Loading papers from ./papers/...")
+    print(f"Found {len(new_files)} new files to process.")
     documents = []
-    for fname in os.listdir(PAPERS_DIR):
-        if fname.endswith(".pdf"):
-            print(f"Loading {fname}...")
-            pdf_path = os.path.join(PAPERS_DIR, fname)
-            doc = pymupdf.open(pdf_path)
-            text = "".join(page.get_text() for page in doc)
-            documents.append(Document(text=text, metadata={"file_name": fname}))
 
-    print(f"✓ Loaded {len(documents)} documents")
-    print("Indexing...")
+    for fname in new_files:
+        print(f"Processing: {fname}...")
+        pdf_path = os.path.join(PAPERS_DIR, fname)
+        
+        try:
+            doc = pymupdf.open(pdf_path)
+            # Extract text per page
+            for page_num, page in enumerate(doc, start=1):
+                text = page.get_text()
+                if text.strip():  # Skip empty
+                    documents.append(
+                        Document(
+                            text=text, 
+                            metadata={
+                                "file_name": fname,
+                                "page_label": str(page_num)
+                            }
+                        )
+                    )
+        except Exception as e:
+            print(f"[ERROR] Failed to read file {fname}: {e}")
+            continue
+
+    if not documents:
+        print("[WARNING] No text was extracted from the new files.")
+        return
+
+    print(f"Creating embeddings for {len(documents)} pages...")
 
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
+    # Index documents
     VectorStoreIndex.from_documents(
         documents,
         storage_context=storage_context,
@@ -52,7 +87,7 @@ def run_ingestion():
         show_progress=True
     )
 
-    print("✓ Indexing complete! chroma_db is ready.")
+    print("✓ Sync completed successfully!")
 
 if __name__ == "__main__":
     run_ingestion()
