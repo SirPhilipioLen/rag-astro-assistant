@@ -287,7 +287,7 @@ run_webui() {
     read -n 1 -s -r
     echo
     echo "[INFO] Stopping and removing containers..."
-    docker compose down
+    docker compose -f docker/docker-compose.yml down
 }
 
 menu_interface() {

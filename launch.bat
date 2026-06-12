@@ -119,7 +119,7 @@ exit /b 0
 echo [INFO] Setting environment variables...
 set OLLAMA_HOST=http://host.docker.internal:11434
 echo [INFO] Checking vector database status...
-docker compose run --rm rag-web python ingest.py
+docker compose -f docker/docker-compose.yml run --rm rag-web python ingest.py
 if !errorlevel! neq 0 (
     echo [ERROR] Ingestion failed. Operational abort.
     exit /b 1
@@ -128,12 +128,12 @@ exit /b 0
 
 :run_terminal
 echo [INFO] Starting Terminal Interface inside Docker...
-docker compose run --build --rm rag-cli
+docker compose -f docker/docker-compose.yml run --build --rm rag-cli
 exit /b 0
 
 :run_webui
 echo [INFO] Launching Gradio and Cloudflare Tunnel inside Docker...
-docker compose up -d rag-web rag-tunnel 
+docker compose up -f docker/docker-compose.yml -d rag-web rag-tunnel 
 
 echo [INFO] Waiting for Cloudflare to generate public link...
 timeout /t 10 /nobreak >nul
@@ -155,7 +155,7 @@ start http://localhost:7860
 pause >nul
 
 echo [INFO] Stopping and removing containers...
-docker compose down
+docker compose -f docker/docker-compose.yml down
 exit /b 0
 
 :menu_interface
