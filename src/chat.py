@@ -25,7 +25,7 @@ Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=O
 
 # Load index
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
-chroma_collection = chroma_client.get_or_create_collection("astro_rag_corpus")
+chroma_collection = chroma_client.get_or_create_collection("rag_corpus")
 vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 index = VectorStoreIndex.from_vector_store(vector_store, storage_context=storage_context)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     console.print("[bold cyan]==================================================================[/bold cyan]")
     console.print("\t🔭 [bold cyan]Retrieval-Augmented Generation Astro-Assistant[/bold cyan]")
     console.print("[bold cyan]==================================================================[/bold cyan]")
-    console.print("Ask questions about black holes, dark energy, dark matter, and even\nthe Artemis missions. Type 'exit' to quit.\n")
+    console.print("Ask questions about astronomy, astrophysics, cosmology, and lunar science. \nType 'exit' to quit.\n")
 
     while True:
         try:

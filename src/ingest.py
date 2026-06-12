@@ -11,7 +11,7 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
 Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=OLLAMA_HOST)
 
 DB_PATH = "./chroma_db"
-COLLECTION_NAME = "astro_rag_corpus"
+COLLECTION_NAME = "rag_corpus"
 PAPERS_DIR = "./papers"
 
 def run_ingestion():

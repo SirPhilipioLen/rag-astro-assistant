@@ -21,11 +21,8 @@ RUN apt-get update && apt-get install -y ca-certificates && \
     llama-index-vector-stores-chroma \
     rich
 
-# Αντιγραφή όλου του κώδικα στο τέλος για σωστό Docker caching
-COPY gradio_app.py .
-COPY chat.py .
-COPY ingest.py .
+COPY src/ ./src/
 
 EXPOSE 7860
 
-CMD ["python", "gradio_app.py"]
+CMD ["python", "src/gradio_app.py"]
