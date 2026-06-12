@@ -6,7 +6,7 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.node_parser import SentenceSplitter
 
-# 1. Configuration
+# Config
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
 Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=OLLAMA_HOST)
 
@@ -15,29 +15,28 @@ COLLECTION_NAME = "astro_rag_corpus"
 PAPERS_DIR = "./papers"
 
 def run_ingestion():
-    # Auto-create folder if it doesn't exist
+    # Ensure dir exists
     os.makedirs(PAPERS_DIR, exist_ok=True)
 
     chroma_client = chromadb.PersistentClient(path=DB_PATH)
     chroma_collection = chroma_client.get_or_create_collection(COLLECTION_NAME)
 
-    # Find files that have already been indexed
+    # Track already indexed files
     existing_files = set()
     if chroma_collection.count() > 0:
-        # Get the metadata of existing documents to see file_names
         results = chroma_collection.get(include=["metadatas"])
         for metadata in results.get("metadatas", []):
             if metadata and "file_name" in metadata:
                 existing_files.add(metadata["file_name"])
 
-    # Check if there are PDF files to process
+    # Get available PDFs
     all_files = [f for f in os.listdir(PAPERS_DIR) if f.endswith('.pdf')]
     
     if not all_files:
         print(f"[INFO] Place PDF files in the '{PAPERS_DIR}' folder and rerun the script.")
         return
 
-    # Filter: Keep only new files
+    # Filter new files
     new_files = [f for f in all_files if f not in existing_files]
 
     if not new_files:
@@ -53,10 +52,10 @@ def run_ingestion():
         
         try:
             doc = pymupdf.open(pdf_path)
-            # Extract per page to keep page number in metadata
+            # Extract text per page
             for page_num, page in enumerate(doc, start=1):
                 text = page.get_text()
-                if text.strip():  # Skip empty pages
+                if text.strip():  # Skip empty
                     documents.append(
                         Document(
                             text=text, 
@@ -80,7 +79,7 @@ def run_ingestion():
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
-    # Add new documents to the existing index
+    # Index documents
     VectorStoreIndex.from_documents(
         documents,
         storage_context=storage_context,

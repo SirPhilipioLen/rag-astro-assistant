@@ -23,23 +23,23 @@ os.environ["OLLAMA_HOST"] = OLLAMA_BASE_URL
 
 Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=OLLAMA_BASE_URL)
 
-# Load the index from ChromaDB
+# Load index
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
 chroma_collection = chroma_client.get_or_create_collection("astro_rag_corpus")
 vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 index = VectorStoreIndex.from_vector_store(vector_store, storage_context=storage_context)
 
-# FIX: Separate retriever and postprocessor
+# Separate retriever & postprocessor
 retriever = index.as_retriever(similarity_top_k=6, embed_model=Settings.embed_model)
 node_processor = SimilarityPostprocessor(similarity_cutoff=0.3)
 
-# Conversation history (Add limit to avoid context overflow)
+# Conversation history
 MAX_HISTORY_TURNS = 5
 conversation_history = []
 
 def retrieve_context(question):
-    """Retrieve and manually filter chunks based on score"""
+    """Retrieve and filter chunks"""
     raw_nodes = retriever.retrieve(question)
     nodes = node_processor.postprocess_nodes(raw_nodes)
     
@@ -50,12 +50,12 @@ def retrieve_context(question):
     for node in nodes:
         text = node.node.get_content()
         fname = node.metadata.get('file_name', 'unknown')
-        page = node.metadata.get('page_label', 'unknown') # Λήψη της σελίδας
+        page = node.metadata.get('page_label', 'unknown')
         
-        # Εμπλουτισμός του context: Το μοντέλο βλέπει πλέον την πηγή κάθε chunk
+        # Append to context
         context += f"[Document: {fname}, Page: {page}]\n{text}\n\n"
         
-        # Καταγραφή για τα στατιστικά στο τερματικό
+        # Record stats
         source_key = (fname, page)
         if source_key not in seen:
             seen.add(source_key)
@@ -65,7 +65,7 @@ def retrieve_context(question):
     return context, sources
 
 def chat(question):
-    """Υποβολή ερώτησης και streaming της απάντησης στο τερματικό"""
+    """Ask question and stream response"""
     global conversation_history
 
     context, sources = retrieve_context(question)
@@ -96,7 +96,7 @@ def chat(question):
 
     thinking_spinner = Spinner("dots", text="Thinking...")
 
-    # Συναρτήσεις για τη δυναμική εναλλαγή του Layout
+    # Dynamic layout helpers
     def show_thinking_layout():
         grid = Table.grid(padding=(0, 1))
         grid.add_column(no_wrap=True)
@@ -110,28 +110,28 @@ def chat(question):
             Markdown(final_text)
         )
 
-    # Εκκίνηση με το thinking layout εμφανές εξαρχής
+    # Start with thinking layout
     with Live(show_thinking_layout(), refresh_per_second=15, console=console) as live:
         for chunk in stream:
             token = chunk["message"]["content"]
             full_response += token
 
-            # Έλεγχος αν το μοντέλο χρησιμοποιεί <think> tags
+            # Handle <think> tags
             if "<think>" in full_response:
                 if "</think>" in full_response:
-                    # Το σκεπτικό τελείωσε. Απομονώνουμε την απάντηση
+                    # Extract answer after thinking
                     answer = full_response.split("</think>")[-1].lstrip()
                     
-                    # Εμφάνιση spinner ΜΕΧΡΙ να έρθει το πρώτο πραγματικό token της απάντησης
+                    # Wait for first real token
                     if answer:
                         live.update(show_answer_layout(answer))
                     else:
                         live.update(show_thinking_layout())
                 else:
-                    # Ακόμα μέσα στο <think> block
+                    # Thinking
                     live.update(show_thinking_layout())
             else:
-                # Αν το μοντέλο απαντήσει απευθείας χωρίς <think> (π.χ. από cache)
+                # Direct answer
                 if full_response.strip():
                     answer = full_response.strip()
                     live.update(show_answer_layout(answer))
@@ -177,7 +177,7 @@ if __name__ == "__main__":
             if not question:
                 continue
 
-            console.print() # Μόνο αλλαγή γραμμής για σωστό spacing
+            console.print()
             chat(question)
         except KeyboardInterrupt:
             break

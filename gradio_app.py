@@ -7,7 +7,7 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core.postprocessor import SimilarityPostprocessor
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-# 1. Αυτόματος εντοπισμός περιβάλλοντος
+# Environment detection
 if os.path.exists("/.dockerenv"):
     OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 else:
@@ -15,25 +15,25 @@ else:
 
 print(f"[INFO] Connecting to Ollama at: {OLLAMA_BASE_URL}")
 
-# 2. Αρχικοποίηση Client & Embedding
+# Init client & embedding
 ollama_client = Client(host=OLLAMA_BASE_URL)
 embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url=OLLAMA_BASE_URL)
 Settings.embed_model = embed_model
 
-# 3. Φόρτωση Index από ChromaDB
+# Load index
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
 chroma_collection = chroma_client.get_or_create_collection("astro_rag_corpus")
 vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 index = VectorStoreIndex.from_vector_store(vector_store, storage_context=storage_context)
 
-# ΔΙΟΡΘΩΣΗ: Διαχωρισμός retriever και postprocessor για να εφαρμόζεται το cutoff
+# Separate retriever & postprocessor to apply cutoff
 retriever = index.as_retriever(similarity_top_k=6, embed_model=embed_model)
 node_processor = SimilarityPostprocessor(similarity_cutoff=0.15)
 
 def retrieve_context(question):
     raw_nodes = retriever.retrieve(question)
-    # ΔΙΟΡΘΩΣΗ: Χειροκίνητο φιλτράρισμα των nodes βάσει score
+    # Filter nodes by score
     nodes = node_processor.postprocess_nodes(raw_nodes)
     
     context = ""
@@ -95,7 +95,7 @@ def chat(message, history):
         token = chunk["message"].get("content", "")
         if token:
             full_response += token
-            # Default Gradio output (κείμενο + <think> tags + πηγές)
+            # Gradio text generation
             yield full_response + (sources_text if sources else "")
 
 demo = gr.ChatInterface(

@@ -7,7 +7,7 @@ echo            Starting RAG Astro-Assistant
 echo ===================================================
 echo.
 
-REM --- 1. ΚΟΙΝΟΙ ΕΛΕΓΧΟΙ, INGESTION & ΜΕΝΟΥ ---
+REM Main flow
 call :chk_ol && ^
 call :chk_doc && ^
 call :chk_svc && ^
@@ -21,7 +21,7 @@ pause
 exit /b 0
 
 
-REM === ΣΥΝΑΡΤΗΣΕΙΣ ===
+REM Functions
 
 :chk_ol
 where ollama >nul 2>&1
@@ -48,7 +48,7 @@ if %errorlevel% neq 0 (
     if /i "!start_ollama!"=="y" (
         echo [INFO] Starting Ollama service in background...
         
-        rem Εκκίνηση του daemon αόρατα με προκαθορισμένο το OLLAMA_HOST=0.0.0.0
+        rem Start daemon silently
         powershell -Command "$env:OLLAMA_HOST='0.0.0.0'; Start-Process -FilePath 'ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden"
         
         timeout /t 5 /nobreak >nul
@@ -62,14 +62,13 @@ exit /b 0
 :get_mdl
 echo [INFO] Ensuring required AI models are available...
 
-rem Έλεγχος για το deepseek-r1:8b
+rem Check models
 ollama list | findstr /C:"deepseek-r1:8b" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] Model deepseek-r1:8b not found. Downloading...
     ollama pull deepseek-r1:8b || exit /b 1
 )
 
-rem Έλεγχος για το nomic-embed-text
 ollama list | findstr /C:"nomic-embed-text" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] Model nomic-embed-text not found. Downloading...
