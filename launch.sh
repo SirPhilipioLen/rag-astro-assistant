@@ -36,14 +36,14 @@ fi
 
 chk_ol() {
     if ! command -v ollama >/dev/null 2>&1 && ! cmd.exe /c "where ollama" >/dev/null 2>&1; then
-        echo "[WARNING] Ollama was not found on Windows."
+        echo "[WARNING] Ollama was not found in the environment."
         
         if [ "$IS_WSL" = true ]; then
-            read -p "Would you like to install Ollama via winget? (y/n): " install_ollama
+            read -p "Would you like to install Ollama via winget on Windows? (y/n): " install_ollama
             if [[ "${install_ollama,,}" == "y" ]]; then
                 echo "[INFO] Installing Ollama via Windows Package Manager (winget)..."
                 
-                # Silent installation
+                # Silent installation with automatic agreement acceptance
                 powershell.exe -Command "winget install Ollama.Ollama --silent --accept-source-agreements --accept-package-agreements"
                 
                 echo "[SUCCESS] Installation trigger complete."
@@ -55,10 +55,13 @@ chk_ol() {
             fi
         else
             # Native Linux logic
-            read -p "Would you like to install Ollama automatically on Linux? (y/n): " install_ollama
+            read -p "Would you like to install Ollama automatically (y/n): " install_ollama
             if [[ "${install_ollama,,}" == "y" ]]; then
-                echo "[INFO] Installing Ollama..."
-                curl -fsSL https://ollama.com/install.sh | sh
+                echo "[INFO] Installing Ollama via official universal script..."
+                
+                # Fail fast if curl or script execution fails
+                curl -fsSL https://ollama.com/install.sh | sh || exit 1
+                
                 echo "[SUCCESS] Ollama installed successfully."
             else
                 echo "[ERROR] Ollama is required."
@@ -157,49 +160,53 @@ chk_doc() {
     echo "[INFO] Checking Docker installation..."
     if ! command -v docker >/dev/null 2>&1; then
         echo "[WARNING] Docker is not installed."
-        read -p "Would you like to install Native Docker automatically? (y/n): " install_docker
+        read -p "Would you like to install Docker automatically? (y/n): " install_docker
         
         if [[ "${install_docker,,}" == "y" ]]; then
-            echo "[INFO] Detecting package manager and installing Native Docker..."
+            echo "[INFO] Detecting package manager and installing Docker..."
             if command -v pacman >/dev/null 2>&1; then
-                # Arch Linux
-                sudo pacman -S --noconfirm docker
+                # Arch Linux (Native & WSL) - Force overwrite to handle orphan binary conflicts
+                sudo pacman -S --noconfirm --overwrite '*' docker || exit 1
             elif command -v apt-get >/dev/null 2>&1; then
                 # Debian/Ubuntu fallback
-                curl -fsSL https://get.docker.com | sudo sh
+                curl -fsSL https://get.docker.com | sudo sh || exit 1
             else
                 echo "[ERROR] Unsupported package manager. Please install Docker manually."
                 exit 1
-fi
+            fi
             
-            echo "[SUCCESS] Native Docker installed successfully."
-            echo "[INFO] Please re-run ./launch.sh to initialize the daemon."
-            exit 1
+            echo "[SUCCESS] Docker installed successfully."
+            hash -r # Refresh bash command paths to recognize 'docker' binary immediately
+            
+            # Ensure user belongs to the docker group
+            if ! groups $USER | grep -q "\bdocker\b"; then
+                sudo usermod -aG docker $USER
+                echo "[INFO] Added $USER to the docker group."
+            fi
         else
             echo "[ERROR] Docker is required to run this application."
             exit 1
         fi
     fi
 
-    # Auto-start docker daemon
+    # Check and automatically start the daemon if it is unresponsive
     if ! docker info >/dev/null 2>&1; then
         echo "[WARNING] Docker daemon is closed or unresponsive."
-        read -p "Would you like to start Docker daemon automatically? (y/n): " start_docker
-        if [[ "${start_docker,,}" == "y" ]]; then
-            echo "[INFO] Launching Docker daemon..."
-            if command -v systemctl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then
-                sudo systemctl start docker
-            else
-                sudo service docker start
-            fi
-            echo "[INFO] Waiting for Docker daemon to initialize..."
-            sleep 10
-            if ! docker info >/dev/null 2>&1; then
-                echo "[ERROR] Docker daemon is still unresponsive."
-                exit 1
-            fi
+        echo "[INFO] Launching Docker daemon..."
+        
+        if command -v systemctl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then
+            sudo systemctl start docker
         else
-            echo "[ERROR] Docker daemon must be running."
+            sudo service docker start
+        fi
+        
+        echo "[INFO] Waiting for Docker daemon to initialize..."
+        sleep 5
+        
+        # Guard clause for fresh installations requiring a group session refresh
+        if ! docker info >/dev/null 2>&1; then
+            echo "[WARNING] Docker daemon is running, but terminal session lacks group permissions."
+            echo "[INFO] Please run 'newgrp docker' or restart your terminal, then re-run ./launch.sh"
             exit 1
         fi
     fi
@@ -237,7 +244,7 @@ chk_compose() {
 
 run_ingest() {
     echo "[INFO] Forwarding OLLAMA_HOST to Ingestion container..."
-    if ! docker compose run --build --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-web python ingest.py; then
+    if ! docker compose -f docker/docker-compose.yml run --build --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-web python src/ingest.py; then
         echo "[ERROR] Ingestion failed. Operational abort."
         exit 1
     fi
@@ -245,14 +252,12 @@ run_ingest() {
 
 run_terminal() {
     echo "[INFO] Starting Terminal Interface inside Docker..."
-    # Omit --build for speed
-    docker compose run --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-cli
+    docker compose -f docker/docker-compose.yml run --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-cli
 }
 
 run_webui() {
     echo "[INFO] Launching Gradio and Cloudflare Tunnel inside Docker..."
-    # Omit --build for speed
-    OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" docker compose up -d rag-web rag-tunnel 
+    OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" docker compose up -f docker/docker-compose.yml -d rag-web rag-tunnel 
 
     echo "[INFO] Waiting for Cloudflare to generate public link..."
     sleep 10
@@ -282,7 +287,7 @@ run_webui() {
     read -n 1 -s -r
     echo
     echo "[INFO] Stopping and removing containers..."
-    docker compose down
+    docker compose -f docker/docker-compose.yml down
 }
 
 menu_interface() {

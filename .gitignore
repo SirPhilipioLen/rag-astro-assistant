@@ -1,6 +1,5 @@
 .gradio/
 .vscode/
 __pycache__/
-chroma_db/
 rag_astro.ipynb
 *.pdf

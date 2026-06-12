@@ -1,0 +1,38 @@
+services:
+  rag-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rag_web_app
+    ports:
+      - "7860:7860"
+    volumes:
+      - ../chroma_db:/app/chroma_db
+      - ../papers:/app/papers
+      - ../src:/app/src
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    restart: unless-stopped
+
+  rag-cli:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rag_cli_app
+    volumes:
+      - ../chroma_db:/app/chroma_db
+      - ../papers:/app/papers
+      - ../src:/app/src
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    stdin_open: true
+    tty: true
+    command: python src/chat.py
+
+  rag-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: rag_cloudflare_tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://rag-web:7860
+    depends_on:
+      - rag-web
