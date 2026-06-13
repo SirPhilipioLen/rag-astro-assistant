@@ -101,7 +101,7 @@ def chat(message, history):
 demo = gr.ChatInterface(
     fn=chat,
     title="🔭 Retrieval-Augmented Generation Astro-Assistant",
-    description="Ask questions about black holes, dark energy, dark matter, etc.",
+    description="Ask questions about astronomy, astrophysics, cosmology, and lunar science.",
     examples=[
         "What is a black hole?",
         "What is dark energy?",
