@@ -257,7 +257,7 @@ run_terminal() {
 
 run_webui() {
     echo "[INFO] Launching Gradio and Cloudflare Tunnel inside Docker..."
-    OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" docker compose up -f docker/docker-compose.yml -d rag-web rag-tunnel 
+    OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" docker compose -f docker/docker-compose.yml up -d rag-web rag-tunnel 
 
     echo "[INFO] Waiting for Cloudflare to generate public link..."
     sleep 10

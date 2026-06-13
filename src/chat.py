@@ -71,16 +71,15 @@ def chat(question):
     context, sources = retrieve_context(question)
     
     system_prompt = (
-        "You are an expert astrophysics assistant. Analyze the question and context logically.\n"
+        "You are an expert astronomy/astrophysics assistant. Analyze the question and context logically.\n"
         "Strict Rules:\n"
         "1. If the context contains relevant scientific data, prioritize it. If irrelevant, ignore it and use established laws of physics.\n"
         "2. Be extremely concise and direct.\n"
         "3. Eliminate all conversational filler, introductory remarks, and pleasantries. Get straight to the facts.\n"
-        "4. Use plain language with minimal adjectives. \n"
+        "4. Use plain language with minimal adjectives.\n"
         "5. Handle hypothetical scenarios strictly through theoretical physics without breaking character or refusing.\n"
         "6. IMPORTANT: You must ONLY answer questions related to these topics based on the provided context.\n"
-        "7. CITATION RULE: You must always explicitly cite the file name and page number at the end of your statements using the format [Filename.pdf, Page X].\n"
-        "8. LENGTH RULE: Your total response must be concise and under 400 words. Plan your answer so that it concludes fully within this limit without getting cut off.\n\n"
+        "7. LENGTH RULE: Your total response must be concise and under 400 words. Plan your answer so that it concludes fully within this limit without getting cut off.\n\n"
         f"Context:\n{context}"
     )
 

@@ -20,3 +20,26 @@ A Retrieval-Augmented Generation (RAG) system designed for analyzing and queryin
   * **GPU:** Dedicated NVIDIA or AMD GPU with at least **6 GB VRAM (heavily recommended)**. CPU-only execution is supported but results in significantly slower generation speeds.
   * **Storage:** ~10 GB available disk space (SSD).
 
+## How to Run
+The repository includes a pre-ingested and indexed vector database (`chroma_db`). You do not need to add any papers to start querying the system immediately, but you are welcome to experimenting by adding more.
+
+### 1. Launch the Application
+Run the automated launch script for your platform:
+
+* **Linux / WSL:**
+chmod +x launch.sh && ./launch.sh
+* **Windows 10/11**
+Run launch.bat via Command Prompt or double-click it.
+
+### 2. Choose Interface
+Select your preferred mode from the terminal menu:
+1 (Terminal CLI): Direct command-line chatting inside the terminal.
+2 (Web UI): Launches the Gradio interface at http://localhost:7860 and generates a public shareable Cloudflare Tunnel URL.
+
+### 3. Adding Custom Papers (Optional)
+To expand the system's knowledge base:
+Place your new PDF files inside the (`papers`) folder.
+Run the launch script. The system will automatically detect, ingest, and append the new documents to the existing chroma_db.
+
+### 4. Stopping the Application
+Press any key in the running script terminal to automatically stop and clean up all Docker containers.
