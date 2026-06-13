@@ -19,3 +19,4 @@ A Retrieval-Augmented Generation (RAG) system designed for analyzing and queryin
   * **RAM:** 8 GB minimum (16 GB recommended).
   * **GPU:** Dedicated NVIDIA or AMD GPU with at least **6 GB VRAM (heavily recommended)**. CPU-only execution is supported but results in significantly slower generation speeds.
   * **Storage:** ~10 GB available disk space (SSD).
+
