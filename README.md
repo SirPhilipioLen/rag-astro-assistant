@@ -16,5 +16,6 @@ A Retrieval-Augmented Generation (RAG) system designed for analyzing and queryin
 ## System Requirements
 * **Operating System:** Windows 10/11 (Native or WSL2), Arch Linux, or Ubuntu/Debian.
 * **Hardware Requirements:**
-  * **GPU:** Dedicated NVIDIA or AMD GPU with at least **8 GB VRAM** (required for full GPU acceleration of the 8B model).
-  * **Storage:** ~8 GB available disk space.
+  * **RAM:** 8 GB minimum (16 GB recommended).
+  * **GPU:** Dedicated NVIDIA or AMD GPU with at least **6 GB VRAM (heavily recommended)**. CPU-only execution is supported but results in significantly slower generation speeds.
+  * **Storage:** ~10 GB available disk space (SSD).
