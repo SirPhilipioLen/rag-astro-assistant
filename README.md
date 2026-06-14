@@ -40,6 +40,3 @@ Select your preferred mode from the terminal menu:
 To expand the system's knowledge base:
 Place your new PDF files inside the (`papers`) folder.
 Run the launch script. The system will automatically detect, ingest, and append the new documents to the existing chroma_db.
-
-### 4. Stopping the Application
-Press any key in the running script terminal to automatically stop and clean up all Docker containers.
