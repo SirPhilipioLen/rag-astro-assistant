@@ -1,0 +1,1 @@
+Drop your PDF papers here to be ingested and indexed when you launch the program.

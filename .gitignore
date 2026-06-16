@@ -3,3 +3,5 @@
 __pycache__/
 rag_astro.ipynb
 *.pdf
+chroma_db/2e7a7700-e6ed-47f1-9407-d2ed0ea1d91e/length.bin
+chroma_db/chroma.sqlite3
