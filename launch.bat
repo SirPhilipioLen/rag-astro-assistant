@@ -128,7 +128,7 @@ exit /b 0
 
 :run_terminal
 echo [INFO] Starting Terminal Interface inside Docker...
-docker compose -f docker/docker-compose.yml run --build --rm rag-cli
+docker compose -f docker/docker-compose.yml run --rm rag-cli
 exit /b 0
 
 :run_webui

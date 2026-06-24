@@ -213,10 +213,10 @@ chk_doc() {
 }
 
 chk_compose() {
-    echo "[INFO] Checking Docker Compose (v2) installation..."
+    echo "[INFO] Checking Docker Compose installation..."
     if ! docker compose version >/dev/null 2>&1; then
-        echo "[WARNING] Modern 'docker compose' (v2 plugin) was not found."
-        read -p "Would you like to install Docker Compose v2 automatically? (y/n): " install_compose
+        echo "[WARNING] Modern 'docker compose' was not found."
+        read -p "Would you like to install Docker Compose automatically? (y/n): " install_compose
         
         if [[ "${install_compose,,}" == "y" ]]; then
             echo "[INFO] Detecting package manager and installing Docker Compose..."
@@ -230,7 +230,7 @@ chk_compose() {
             fi
             
             if docker compose version >/dev/null 2>&1; then
-                echo "[SUCCESS] Docker Compose v2 installed successfully."
+                echo "[SUCCESS] Docker Compose installed successfully."
             else
                 echo "[ERROR] Installation completed but 'docker compose' is still unavailable."
                 exit 1
@@ -244,7 +244,7 @@ chk_compose() {
 
 run_ingest() {
     echo "[INFO] Forwarding OLLAMA_HOST to Ingestion container..."
-    if ! docker compose -f docker/docker-compose.yml run --build --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-web python src/ingest.py; then
+    if ! docker compose -f docker/docker-compose.yml run --rm -e OLLAMA_HOST="$CONTAINER_OLLAMA_HOST" rag-web python src/ingest.py; then
         echo "[ERROR] Ingestion failed. Operational abort."
         exit 1
     fi

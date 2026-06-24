@@ -2,14 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Environment variables (αποφυγή αρχείων .pyc και άμεσο output των logs)
+# Set env variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Εγκατάσταση ca-certificates, αναβάθμιση pip και βιβλιοθηκών σε ΕΝΑ layer με χρήση cache mount
+# Install system and python dependencies
 RUN apt-get update && apt-get install -y ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --upgrade pip && \
     pip install \
     gradio==6.15.0 \
     ollama \
