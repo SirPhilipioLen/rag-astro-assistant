@@ -6,12 +6,15 @@ services:
     container_name: rag_web_app
     ports:
       - "7860:7860"
+    env_file:
+      - ../.env
     volumes:
-      - ../chroma_db:/app/chroma_db
+      - ../data:/app/data
       - ../papers:/app/papers
       - ../src:/app/src
     environment:
       - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-r1:7b}
     restart: unless-stopped
 
   rag-cli:
@@ -19,12 +22,15 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: rag_cli_app
+    env_file:
+      - ../.env
     volumes:
-      - ../chroma_db:/app/chroma_db
+      - ../data:/app/data
       - ../papers:/app/papers
       - ../src:/app/src
     environment:
       - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-r1:7b}
     stdin_open: true
     tty: true
     command: python src/chat.py

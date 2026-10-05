@@ -6,10 +6,11 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Install system and python dependencies
-RUN apt-get update && apt-get install -y ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install \
+# Install system dependencies and Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir \
     gradio==6.15.0 \
     ollama \
     llama-index \
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y ca-certificates && \
     llama-index-vector-stores-chroma \
     rich
 
+# Copy source code
 COPY src/ ./src/
 
 EXPOSE 7860

@@ -11,6 +11,7 @@ REM Main flow
 call :chk_ol && ^
 call :chk_doc && ^
 call :chk_svc && ^
+call :select_model && ^
 call :get_mdl && ^
 call :run_ingest && ^
 call :menu_interface
@@ -59,16 +60,47 @@ if %errorlevel% neq 0 (
 )
 exit /b 0
 
+:select_model
+echo.
+echo ===================================================
+echo        Select Generative Model (Reasoning)
+echo ===================================================
+echo Choose the model size based on your GPU VRAM:
+echo [1] deepseek-r1:7b  (Requires ~5GB VRAM) - DEFAULT
+echo [2] deepseek-r1:8b  (Requires ~6GB VRAM) 
+echo [3] deepseek-r1:14b (Requires ~10GB VRAM)
+echo [4] deepseek-r1:32b (Requires ~20GB VRAM)
+echo.
+set /p "mdl_choice=Enter your choice (1-4) [Press Enter for 1]: "
+
+if "!mdl_choice!"=="2" (
+    set LLM_MODEL=deepseek-r1:8b
+) else if "!mdl_choice!"=="3" (
+    set LLM_MODEL=deepseek-r1:14b
+) else if "!mdl_choice!"=="4" (
+    set LLM_MODEL=deepseek-r1:32b
+) else (
+    set LLM_MODEL=deepseek-r1:7b
+)
+
+echo [INFO] Selected Model: !LLM_MODEL!
+
+REM Εξαγωγή σε .env αρχείο για να το διαβάσει το Docker
+echo OLLAMA_HOST=http://host.docker.internal:11434> .env
+echo LLM_MODEL=!LLM_MODEL!>> .env
+exit /b 0
+
 :get_mdl
 echo [INFO] Ensuring required AI models are available...
 
-rem Check models
-ollama list | findstr /C:"deepseek-r1:8b" >nul 2>&1
+rem Check Main Generative Model
+ollama list | findstr /C:"!LLM_MODEL!" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [INFO] Model deepseek-r1:8b not found. Downloading...
-    ollama pull deepseek-r1:8b || exit /b 1
+    echo [INFO] Model !LLM_MODEL! not found. Downloading...
+    ollama pull !LLM_MODEL! || exit /b 1
 )
 
+rem Check Embedding Model
 ollama list | findstr /C:"nomic-embed-text" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] Model nomic-embed-text not found. Downloading...
@@ -116,10 +148,8 @@ if %errorlevel% neq 0 (
 exit /b 0
 
 :run_ingest
-echo [INFO] Setting environment variables...
-set OLLAMA_HOST=http://host.docker.internal:11434
 echo [INFO] Checking vector database status...
-docker compose -f docker/docker-compose.yml run --rm rag-web python src/ingest.py
+docker compose -f docker/docker-compose.yml --env-file .env run --rm rag-web python src/ingest.py
 if !errorlevel! neq 0 (
     echo [ERROR] Ingestion failed. Operational abort.
     exit /b 1
@@ -128,12 +158,12 @@ exit /b 0
 
 :run_terminal
 echo [INFO] Starting Terminal Interface inside Docker...
-docker compose -f docker/docker-compose.yml run --rm rag-cli
+docker compose -f docker/docker-compose.yml --env-file .env run --rm rag-cli
 exit /b 0
 
 :run_webui
 echo [INFO] Launching Gradio and Cloudflare Tunnel inside Docker...
-docker compose -f docker/docker-compose.yml up -d rag-web rag-tunnel 
+docker compose -f docker/docker-compose.yml --env-file .env up -d rag-web rag-tunnel 
 
 echo [INFO] Waiting for Cloudflare to generate public link...
 timeout /t 10 /nobreak >nul
@@ -147,7 +177,7 @@ for /f "tokens=4" %%a in ('docker logs rag_cloudflare_tunnel 2^>^&1 ^| findstr "
 echo Public Shareable URL: %PUBLIC_URL%
 echo.
 echo ===================================================
-echo         Press any key to stop all processes
+echo        Press any key to stop all processes
 echo ===================================================
 echo.
 
