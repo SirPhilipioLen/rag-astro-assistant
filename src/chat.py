@@ -42,7 +42,7 @@ storage_context = StorageContext.from_defaults(vector_store=vector_store)
 index = VectorStoreIndex.from_vector_store(vector_store, storage_context=storage_context)
 
 retriever = index.as_retriever(similarity_top_k=6, embed_model=Settings.embed_model)
-node_processor = SimilarityPostprocessor(similarity_cutoff=0.4)
+node_processor = SimilarityPostprocessor(similarity_cutoff=0.45)
 
 # -----------------------------------------------------------------------------
 # 3. Visual History Configuration (Not fed to LLM)

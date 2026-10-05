@@ -31,7 +31,7 @@ index = VectorStoreIndex.from_vector_store(vector_store, storage_context=storage
 
 # Configure strict retrieval
 retriever = index.as_retriever(similarity_top_k=6, embed_model=Settings.embed_model)
-node_processor = SimilarityPostprocessor(similarity_cutoff=0.4)
+node_processor = SimilarityPostprocessor(similarity_cutoff=0.45)
 
 def retrieve_context(question):
     raw_nodes = retriever.retrieve(question)
